@@ -1,0 +1,2 @@
+# BlindRhythm
+A rhythm game.
