@@ -6,7 +6,7 @@ const { RenderPass } = require("three/addons/postprocessing/RenderPass.js");
 const { ShaderPass } = require("three/addons/postprocessing/ShaderPass.js");
 const { OutputPass } = require("three/addons/postprocessing/OutputPass.js");
 const Model = require("../../scripts/models.js");
-const { max } = require("three/src/nodes/TSL.js");
+const { max, abs } = require("three/src/nodes/TSL.js");
 
 const scene = Utils.createScene();
 const camera = Utils.createCamera();
@@ -79,12 +79,11 @@ async function loadGame(data, songInfo) {
         }),
     );
     composer.addPass(outputPass);
-    startgame();
-}
 
-function startgame() {
-    // 开始游戏
-    console.log("game running...");
+    map.notes.sort((a, b) => {
+        return a.time - b.time;
+    });
+
     playing = true;
     startGameTime = golbalTime;
 }
@@ -105,20 +104,110 @@ function getColor(time) {
     return colors[0];
 }
 
-function updateJudgement(songtime) {
-    // 更新判定
-
-    for (let i = 0; i < map.notes.length; i++) {}
-
-    keysLastFrame = [...keys];
-}
-
 // 游玩设置
 const scrollSpeed = 8;
 const maxViewDistance = 10;
 
+// 判定
+// Perfect  100%    <=32ms
+// Great    75%     32ms<t<=64ms
+// Good     25%     64ms<t<=128ms
+// Miss     0%      128ms<t
+const judgementTime = [32, 64, 128];
+const judgementText = ["Perfect", "Great", "Good", "Miss"];
+const judgementACC = [1, 0.75, 0.25, 0];
+
 function inn(x) {
     return Math.max(Math.min(x, maxViewDistance), 0);
+}
+
+function addJudgement(time, offset, type) {
+    if (type === undefined) {
+        // 根据offset计算判定
+        if (Math.abs(offset) <= judgementTime[0] / 1000) {
+            type = 0;
+        } else if (Math.abs(offset) <= judgementTime[1] / 1000) {
+            type = 1;
+        } else if (Math.abs(offset) <= judgementTime[2] / 1000) {
+            type = 2;
+        } else {
+            type = 3;
+        }
+    }
+    console.log(judgementText[type]);
+    judgements.push({ time, offset, type });
+}
+
+function updateJudgement(songTime) {
+    // 判定
+    let keyChecked = [false, false, false, false]; // 重复判定标记
+    for (let i = 0; i < map.notes.length; i++) {
+        note = map.notes[i];
+        if (note.checked) {
+            continue;
+        }
+        if (note.time / 1000 - judgementTime[2] / 1000 > songTime) {
+            break;
+        }
+        if ((note.stopTime || note.time) / 1000 + judgementTime[2] / 1000 < songTime) {
+            if (note.holding) {
+                // 长条忘记松手了（可以酌情考虑一下给Good）
+                note.holding = false;
+                note.checked = true;
+                addJudgement(note.stopTime, 0, 2);
+                keyChecked[note.track - 1] = true;
+                continue;
+            }
+            // 为什么你只是看着！（震怒）
+            note.checked = true;
+            addJudgement(songTime * 1000, 0, 3);
+            continue;
+        }
+        if (keyChecked[note.track - 1]) {
+            continue;
+        }
+        if (!note.checked) {
+            if (note.stopTime) {
+                // 长条
+                if (note.holding) {
+                    // 按住的长条
+                    if (songTime < (note.stopTime - judgementTime[2]) / 1000) {
+                        if (!keys[note.track - 1]) {
+                            // 哦亲爱的你又多了一个小姐
+                            note.holding = false;
+                            note.checked = true;
+                            addJudgement(songTime * 1000, 0, 3);
+                            keyChecked[note.track - 1] = true;
+                            continue;
+                        }
+                    } else {
+                        if (!keys[note.track - 1]) {
+                            note.holding = false;
+                            note.checked = true;
+                            addJudgement(note.stopTime, songTime - note.stopTime / 1000);
+                            keyChecked[note.track - 1] = true;
+                        }
+                    }
+                } else {
+                    if (keys[note.track - 1] && !keysLastFrame[note.track - 1]) {
+                        note.holding = true;
+                        addJudgement(note.time, songTime - note.time / 1000);
+                        keyChecked[note.track - 1] = true;
+                    }
+                }
+            } else {
+                // 单按
+                if (Math.abs(songTime - note.time / 1000) <= judgementTime[2] / 1000) {
+                    if (keys[note.track - 1] && !keysLastFrame[note.track - 1]) {
+                        note.checked = true;
+                        addJudgement(note.time, songTime - note.time / 1000);
+                        keyChecked[note.track - 1] = true;
+                    }
+                }
+            }
+        }
+    }
+    keysLastFrame = [...keys];
 }
 
 let lt = Utils.time();
@@ -129,12 +218,18 @@ function animate() {
     const fps = 1 / (golbalTime - lt);
     const songTime = golbalTime - startGameTime - 4.39;
 
-    // 判定
-    // Perfect  100%
-    // Great    75%
-    // Good     25%
-    // Miss     0%
-    const judgementTime = [32, 64, 128];
+    if (map) {
+        updateJudgement(songTime);
+    }
+
+    judgeElement = document.getElementById("judge");
+    if (judgements[judgements.length - 1]) {
+        lastJudgement = judgements[judgements.length - 1];
+        judgeElement.innerHTML = `${judgementText[lastJudgement.type]}`;
+        judgeElement.style.fontSize = `${5 + (1 / (0.75 + songTime - lastJudgement.time / 1000)) ** 4}vh`;
+    } else {
+        judgeElement.innerHTML = "";
+    }
 
     // 刷新
     groups.forEach((group) => {

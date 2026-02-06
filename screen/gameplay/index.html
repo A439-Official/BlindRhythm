@@ -4,11 +4,26 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="res:///css/style.css" />
-        <style></style>
+        <style>
+            .judge {
+                color: white;
+                text-align: center;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 1000;
+                font-size: 5vh;
+                font-weight: bold;
+                text-shadow: 0 0 8px rgb(0, 0, 0);
+                transition: opacity 0.3s ease;
+            }
+        </style>
     </head>
     <body>
         <div id="renderer"></div>
         <div id="fps" class="fps"></div>
+        <div id="judge" class="judge"></div>
     </body>
 </html>
 
