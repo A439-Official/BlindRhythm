@@ -14,7 +14,7 @@ class WindowManager {
             minWidth: 640,
             minHeight: 360,
             title: appName,
-            icon: path.join(__dirname, "../resources/texture/BR.png"),
+            icon: path.join(__dirname, "../resources/textures/BR.png"),
             // frame: false,
             webPreferences: {
                 preload: path.join(__dirname, "../preload.js"),
