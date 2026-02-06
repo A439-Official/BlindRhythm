@@ -1,0 +1,50 @@
+{
+    "name": "blindrhythm",
+    "version": "0.1.0",
+    "description": "A rhythm game.",
+    "main": "index.js",
+    "scripts": {
+        "start": "electron .",
+        "build": "electron-builder",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "electron": "^39.2.7",
+        "electron-builder": "^26.4.0",
+        "electron-updater": "^6.7.3",
+        "three": "^0.182.0",
+        "troika-three-text": "^0.52.4"
+    },
+    "build": {
+        "appId": "com.yourcompany.blindrhythm",
+        "productName": "Blind Rhythm",
+        "directories": {
+            "output": "dist"
+        },
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64",
+                        "ia32"
+                    ]
+                }
+            ],
+            "requestedExecutionLevel": "asInvoker"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "Blind Rhythm",
+            "installerIcon": "resources/texture/BR.ico",
+            "uninstallerIcon": "resources/texture/BR.ico",
+            "installerHeaderIcon": "resources/texture/BR.ico"
+        }
+    }
+}

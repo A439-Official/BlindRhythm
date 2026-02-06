@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="res:///css/style.css" />
+        <style>
+            /* 曲绘 */
+            .song-illustration {
+                position: absolute;
+                top: 2vh;
+                left: 2vw;
+                width: 46vw;
+                height: 46vh;
+            }
+
+            .song-illustration img {
+                object-fit: cover;
+                width: 100%;
+                height: 100%;
+                border-radius: 2vh;
+            }
+
+            /* 歌曲信息 */
+            .song-info {
+                position: absolute;
+                bottom: 2vh;
+                left: 2vw;
+                width: 46vw;
+                height: 46vh;
+                padding: 2vh 2vw;
+            }
+
+            .song-title {
+                margin: 0 0 1.5vh;
+                font-size: 3.5vh;
+                font-weight: 700;
+                color: #fff;
+                text-shadow: 0 0.2vh 0.4vh rgba(0, 0, 0, 0.5);
+            }
+
+            .song-artist,
+            .song-creator {
+                margin: 0.8vh 0;
+                font-size: 2vh;
+                color: rgba(255, 255, 255, 0.85);
+            }
+
+            /* 歌曲列表 */
+            .song-list {
+                position: absolute;
+                top: 50%;
+                right: 2vw;
+                transform: translateY(-50%);
+                width: 46vw;
+                display: flex;
+                flex-direction: column;
+                gap: 1.5vh;
+                overflow-y: auto;
+                padding: 2vh 1vw;
+                max-height: 96vh;
+            }
+
+            /* 列表项 */
+            .map-item {
+                background: rgba(255, 255, 255, 0.08);
+                backdrop-filter: blur(10px);
+                color: white;
+                border: 0.15vh solid rgba(255, 255, 255, 0.15);
+                padding: 2vh 2vw;
+                font-size: 2vh;
+                border-radius: 1.2vh;
+                cursor: pointer;
+                min-height: 8vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                opacity: 0.9;
+                transition: all 0.3s ease;
+            }
+
+            .map-item:hover {
+                background: rgba(255, 255, 255, 0.15);
+                border-color: rgba(255, 255, 255, 0.3);
+                transform: translateX(-0.5vw);
+                opacity: 1;
+            }
+
+            .map-item.active {
+                background: rgba(66, 133, 244, 0.25);
+                border-color: rgba(66, 133, 244, 0.5);
+                box-shadow: 0 0 2vh rgba(66, 133, 244, 0.3);
+                opacity: 1;
+            }
+
+            .map-item .map-moreinfo {
+                max-height: 0;
+                margin-top: 0;
+                margin-bottom: 0;
+                opacity: 0;
+                transition: all 0.3s ease;
+            }
+
+            .map-item.active .map-moreinfo {
+                max-height: 100vh;
+                margin-top: auto;
+                margin-bottom: auto;
+                opacity: 1;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="song-illustration">
+            <img src="" alt="无曲绘" />
+        </div>
+
+        <div class="song-info">
+            <h1 class="song-title"></h1>
+            <p class="song-artist"></p>
+            <p class="song-creator"></p>
+            <p class="map-name"></p>
+            <p class="map-difficulty"></p>
+        </div>
+
+        <div class="song-list"></div>
+
+        <div id="renderer"></div>
+    </body>
+</html>
+
+<script src="index.js"></script>

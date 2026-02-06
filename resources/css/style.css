@@ -1,0 +1,34 @@
+@font-face {
+    font-family: "ResourceHanRoundedCN-Regular";
+    src: url("res:///fonts/ResourceHanRoundedCN-Regular.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+* {
+    /* margin: 0; */
+    font-family: "ResourceHanRoundedCN-Regular";
+    -webkit-user-drag: none;
+    user-drag: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+body {
+    overflow: hidden;
+}
+
+#renderer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -999;
+}
