@@ -47,11 +47,27 @@ let startGameTime;
 let golbalTime = 0;
 let audio;
 let audioPlayed = false;
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let map;
 let groups = [];
 let keys = [false, false, false, false]; // 按键状态
 let keysLastFrame = [...keys];
+let acc = 1;
+let accLastFrame = acc;
+
+// 游玩设置
+const scrollSpeed = 10;
+const maxViewDistance = 10;
+let offset = 0;
+
+// 判定
+// Perfect  100%    <=36ms
+// Great    75%     36ms<t<=72ms
+// Good     25%     72ms<t<=128ms
+// Miss     0%      128ms<t
+const judgementTime = [36, 72, 128];
+const judgementText = ["Perfect", "Great", "Good", "Miss"];
+const judgementColor = [0x19ff71, 0xc7ff57, 0xfff233, 0xff545d];
+const judgementACC = [1, 0.8, 0.3, 0];
 
 // 存放判定信息
 // time: 时间
@@ -60,6 +76,8 @@ let keysLastFrame = [...keys];
 let judgements = [];
 
 async function loadGame(data, songInfo) {
+    offset = await Utils.getConfig("gameplay.offset", 0);
+
     // 加载游戏
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(songInfo.backgroundFile ? `song:///${data.dir}/${songInfo.backgroundFile}` : "res:///textures/Illustration.png", (texture) => {
@@ -68,10 +86,7 @@ async function loadGame(data, songInfo) {
     });
 
     // 加载音频
-    const audioData = await ipcRenderer.invoke("song-file-bytes", `${data.dir}/${songInfo.audioFile}`);
-    audio = audioContext.createBufferSource();
-    audio.buffer = await audioContext.decodeAudioData(audioData.buffer);
-    audio.connect(audioContext.destination);
+    audio = await Utils.loadAudio(`${data.dir}/${songInfo.audioFile}`);
 
     composer.addPass(renderPass);
     // 自定义着色器后处理
@@ -99,33 +114,29 @@ async function loadGame(data, songInfo) {
 
 function getColor(time) {
     const colors = [0xffffff, 0xfc3636, 0x0093fd, 0x813bc6, 0xf2c94c, 0xd34b8c, 0xf2994a, 0x00d1ff, 0x27b06e];
-    let lastbpm = map.bpms.find((bpm) => (bpm.time || 0) > time) || map.bpms[0];
-    if (!lastbpm.bpm) {
+    let lastbpm = null;
+    for (const bpm of map.bpms) {
+        if ((bpm.time || 0) > time) {
+            break;
+        }
+        lastbpm = bpm;
+    }
+    if (lastbpm === null) {
+        lastbpm = map.bpms[0];
+    }
+    if ((lastbpm.bpm || 0) === 0) {
         return 0;
     }
     const modValues = [1, 2, 3, 4, 6, 8, 12, 16];
-    const timeValue = ((time - (lastbpm.time || 0)) / 60000) * lastbpm.bpm;
     for (let i = 0; i < 8; i++) {
-        if (Math.abs(Utils.mod(timeValue, 1 / modValues[i])) < 1 / 96) {
+        const modValue = 1 / modValues[i];
+        const timeValue = ((time - (lastbpm.time || 0)) / 60000) * (lastbpm.bpm || 0);
+        if (Math.abs(Utils.mod(timeValue, modValue)) < 1 / 96) {
             return colors[i + 1];
         }
     }
     return colors[0];
 }
-
-// 游玩设置
-const scrollSpeed = 8;
-const maxViewDistance = 10;
-const offset = 175; // 偏移ms
-
-// 判定
-// Perfect  100%    <=32ms
-// Great    75%     32ms<t<=64ms
-// Good     25%     64ms<t<=128ms
-// Miss     0%      128ms<t
-const judgementTime = [32, 64, 128];
-const judgementText = ["Perfect", "Great", "Good", "Miss"];
-const judgementACC = [1, 0.75, 0.25, 0];
 
 function inn(x) {
     return Math.max(Math.min(x, maxViewDistance), 0);
@@ -133,23 +144,25 @@ function inn(x) {
 
 function addJudgement(time, offset, type) {
     if (type === undefined) {
-        // 根据offset计算判定
-        if (Math.abs(offset) <= judgementTime[0] / 1000) {
-            type = 0;
-        } else if (Math.abs(offset) <= judgementTime[1] / 1000) {
-            type = 1;
-        } else if (Math.abs(offset) <= judgementTime[2] / 1000) {
-            type = 2;
-        } else {
-            type = 3;
-        }
+        // 非强制判定
+        const absOffset = Math.abs(offset);
+        type = judgementTime.findIndex((t) => absOffset <= t / 1000);
+        type = type === -1 ? 3 : type;
     }
     console.log(judgementText[type]);
     judgements.push({ time, offset, type });
+
+    // 计算ACC
+    let a = 0;
+    let b = 0;
+    judgements.forEach((j) => {
+        a += judgementACC[j.type];
+        b++;
+    });
+    acc = a / b;
 }
 
 function updateJudgement(songTime) {
-    // 判定
     let keyChecked = [false, false, false, false]; // 重复判定标记
     for (let i = 0; i < map.notes.length; i++) {
         const note = map.notes[i];
@@ -222,34 +235,34 @@ function updateJudgement(songTime) {
 
 let lt = Utils.time();
 function animate() {
-    requestAnimationFrame(animate);
     lt = golbalTime;
     golbalTime = Utils.time();
     const fps = 1 / (golbalTime - lt);
-    const songTime = golbalTime - startGameTime - 4.39;
+    let songTime = golbalTime - startGameTime - 4.39;
+    if (audio && audio.isPlaying()) {
+        if (Math.abs(audio.getCurrentTime() - offset / 1000 - songTime) > 0.05) {
+            songTime = audio.getCurrentTime() - offset / 1000;
+        }
+    }
 
+    // 播放音乐
+    if (golbalTime - startGameTime - 4.39 >= -offset / 1000 && !audioPlayed) {
+        audio.play();
+        audioPlayed = true;
+    }
+
+    // 进行判定
     if (map && playing) {
         updateJudgement(songTime);
     }
 
-    const judgeElement = document.getElementById("judge");
-    if (judgements[judgements.length - 1]) {
-        const lastJudgement = judgements[judgements.length - 1];
-        judgeElement.innerHTML = `${judgementText[lastJudgement.type]}`;
-        judgeElement.style.fontSize = `${5 + (1 / (0.75 + songTime - lastJudgement.time / 1000)) ** 4}vh`;
-    } else {
-        judgeElement.innerHTML = "";
-    }
-
-    // 刷新
+    // 绘制（我不会模型复用:sad:）
     groups.forEach((group) => {
         disposeObject(group);
         scene.remove(group);
     });
     groups = [];
-
-    // 添加物体
-    if (Model._texturesLoaded) {
+    if (Model._texturesLoaded && map) {
         const defaultgroup = new THREE.Group();
         for (let i = 0; i < 4; i++) {
             const track = new THREE.Group();
@@ -259,7 +272,6 @@ function animate() {
             const r = [90, 180, 0, -90][i];
             receptor.rotation.set(0, 0, (r / 180) * Math.PI);
             track.add(receptor);
-
             map.notes.forEach((note) => {
                 if (note.track - 1 === i) {
                     if ((note.stopTime || note.time) / 1000 - songTime > 0 && note.time / 1000 - songTime < maxViewDistance / scrollSpeed) {
@@ -287,12 +299,52 @@ function animate() {
                     }
                 }
             });
-
             defaultgroup.add(track);
         }
         scene.add(defaultgroup);
         groups.push(defaultgroup);
     }
+
+    // 更新判定
+    const judgeElement = document.getElementById("judge");
+    if (judgements[judgements.length - 1]) {
+        const lastJudgement = judgements[judgements.length - 1];
+        judgeElement.innerHTML = `${judgementText[lastJudgement.type]}`;
+        judgeElement.style.fontSize = `${6 + 0.5 * (1 / (0.75 + songTime - lastJudgement.time / 1000)) ** 4}vh`;
+        judgeElement.style.color = Utils.hexToRGBA(judgementColor[lastJudgement.type]);
+    } else {
+        judgeElement.innerHTML = "";
+    }
+    const offsetDisplay = document.getElementById("offset");
+    offsetDisplay.width = window.innerHeight / 4;
+    offsetDisplay.height = window.innerHeight / 32;
+    const ctx = offsetDisplay.getContext("2d");
+    ctx.clearRect(0, 0, offsetDisplay.width, offsetDisplay.height);
+    ctx.fillStyle = "#00000043";
+    ctx.fillRect(0, 0, offsetDisplay.width, offsetDisplay.height);
+    ctx.lineWidth = offsetDisplay.height / 4;
+    for (let i = judgementTime.length - 1; i >= 0; i--) {
+        ctx.strokeStyle = Utils.hexToRGBA(judgementColor[i]);
+        ctx.beginPath();
+        ctx.moveTo(offsetDisplay.width * (0.5 - judgementTime[i] / judgementTime[judgementTime.length - 1] / 2), offsetDisplay.height / 2);
+        ctx.lineTo(offsetDisplay.width * (0.5 + judgementTime[i] / judgementTime[judgementTime.length - 1] / 2), offsetDisplay.height / 2);
+        ctx.stroke();
+    }
+    ctx.lineWidth = offsetDisplay.height / 8;
+    judgements.forEach((judge) => {
+        if (songTime - judge.time / 1000 < 1) {
+            ctx.strokeStyle = Utils.hexToRGBA(judgementColor[judge.type], 1 - (songTime - judge.time / 1000));
+            ctx.beginPath();
+            ctx.moveTo(offsetDisplay.width * (0.5 + (judge.offset * 1000) / judgementTime[judgementTime.length - 1] / 2), 0);
+            ctx.lineTo(offsetDisplay.width * (0.5 + (judge.offset * 1000) / judgementTime[judgementTime.length - 1] / 2), offsetDisplay.height);
+            ctx.stroke();
+        }
+    });
+
+    // 更新acc
+    const accDisplay = document.getElementById("acc");
+    accDisplay.innerHTML = `${(accLastFrame * 100).toFixed(2)}%`;
+    accLastFrame = accLastFrame * 0.9 + acc * 0.1;
 
     // 更新背景
     if (bgTexture) {
@@ -302,24 +354,16 @@ function animate() {
         scene.background = bgTexture;
     }
 
-    // 显示FPS
-    document.getElementById("fps").textContent = `FPS: ${Math.floor(fps)}`;
-
-    // 在songTime等于0时播放音乐
-    if (songTime >= -offset / 1000 && !audioPlayed) {
-        audio.start();
-        audioPlayed = true;
-    }
-
-    uniforms.time.value = golbalTime;
-
     // 更新着色器
+    uniforms.time.value = golbalTime;
     for (const shader in customShaderPass) {
         for (const key in customShaderPass[shader].uniforms) {
             customShaderPass[shader].uniforms[key].value = uniforms[key].value;
         }
     }
     composer.render();
+    requestAnimationFrame(animate);
+    // setTimeout(animate, 1000 / 240);
 }
 animate();
 

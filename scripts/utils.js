@@ -24,6 +24,26 @@ class Utils {
         return await ipcRenderer.invoke("page-data");
     }
 
+    /**
+     * 获取配置值
+     * @param {string} key - 配置键，支持点号分隔（如 "gameplay.offset"）
+     * @param {any} defaultValue - 默认值，当配置不存在时返回
+     * @returns {Promise<any>} 配置值
+     */
+    static async getConfig(key, defaultValue = null) {
+        return await ipcRenderer.invoke("get-config", key, defaultValue);
+    }
+
+    /**
+     * 设置配置值
+     * @param {string} key - 配置键，支持点号分隔（如 "gameplay.offset"）
+     * @param {any} value - 要设置的值
+     * @returns {Promise<boolean>} 是否成功保存
+     */
+    static async setConfig(key, value) {
+        return await ipcRenderer.invoke("set-config", key, value);
+    }
+
     // 创建场景函数
     static createScene(options = {}) {
         this.scene = new THREE.Scene();
@@ -130,23 +150,25 @@ class Utils {
      * @param {string} audioPath - 音频文件路径
      * @returns {Promise<Object>} 返回包含音频控制方法的对象
      */
-    static async loadAndPlayAudio(audioPath) {
+    static async loadAudio(audioPath) {
         try {
             // 获取音频文件数据
             const audioData = await ipcRenderer.invoke("song-file-bytes", audioPath);
-
-            // 创建音频上下文
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-            // 创建音频源
             const audioSource = audioContext.createBufferSource();
-
-            // 解码音频数据
             const decodedData = await audioContext.decodeAudioData(audioData.buffer);
             audioSource.buffer = decodedData;
 
-            // 连接到音频输出
-            audioSource.connect(audioContext.destination);
+            // 创建增益节点用于控制播放/暂停
+            const gainNode = audioContext.createGain();
+            audioSource.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            // 初始化播放状态
+            let isPlaying = false;
+            let startTime = 0;
+            let pauseTime = 0;
+            let playbackRate = 1.0;
 
             return {
                 /**
@@ -155,7 +177,63 @@ class Utils {
                  * @param {number} [offset=0] - 从音频的哪个位置开始播放（秒）
                  */
                 play: (when = 0, offset = 0) => {
-                    audioSource.start(when, offset);
+                    if (isPlaying) {
+                        console.warn("Audio is already playing");
+                        return;
+                    }
+
+                    const currentTime = audioContext.currentTime;
+                    startTime = currentTime - pauseTime + (when || 0);
+                    audioSource.start(Math.max(0, when), offset || pauseTime);
+                    gainNode.gain.setValueAtTime(1.0, audioContext.currentTime);
+                    isPlaying = true;
+                    pauseTime = 0;
+                },
+
+                /**
+                 * 暂停音频
+                 */
+                pause: () => {
+                    if (!isPlaying || !audioSource) return;
+
+                    const currentTime = audioContext.currentTime;
+                    pauseTime = currentTime - startTime;
+                    gainNode.gain.setValueAtTime(0.0, audioContext.currentTime);
+                    isPlaying = false;
+
+                    // 停止当前的音频源
+                    try {
+                        audioSource.stop();
+                    } catch (e) {
+                        // 忽略已经停止的源
+                    }
+                },
+
+                /**
+                 * 恢复播放
+                 */
+                resume: () => {
+                    if (isPlaying) {
+                        console.warn("Audio is already playing");
+                        return;
+                    }
+
+                    // 创建新的音频源继续播放
+                    const newSource = audioContext.createBufferSource();
+                    newSource.buffer = decodedData;
+                    newSource.connect(gainNode);
+
+                    const currentOffset = pauseTime;
+                    const when = audioContext.currentTime;
+
+                    newSource.start(when, currentOffset);
+                    gainNode.gain.setValueAtTime(1.0, when);
+
+                    // 更新引用
+                    audioSource = newSource;
+                    startTime = when - currentOffset;
+                    isPlaying = true;
+                    pauseTime = 0;
                 },
 
                 /**
@@ -163,8 +241,16 @@ class Utils {
                  */
                 stop: () => {
                     if (audioSource) {
-                        audioSource.stop();
+                        try {
+                            audioSource.stop();
+                        } catch (e) {
+                            // 忽略已经停止的源
+                        }
                     }
+                    gainNode.gain.setValueAtTime(0.0, audioContext.currentTime);
+                    isPlaying = false;
+                    startTime = 0;
+                    pauseTime = 0;
                 },
 
                 /**
@@ -172,6 +258,45 @@ class Utils {
                  */
                 getDuration: () => {
                     return decodedData ? decodedData.duration : 0;
+                },
+
+                /**
+                 * 获取当前播放时间（秒）
+                 */
+                getCurrentTime: () => {
+                    if (!isPlaying) {
+                        return pauseTime;
+                    }
+                    return audioContext.currentTime - startTime;
+                },
+
+                /**
+                 * 跳转到指定时间
+                 * @param {number} time - 目标时间（秒）
+                 */
+                seek: (time) => {
+                    const wasPlaying = isPlaying;
+
+                    if (wasPlaying) {
+                        this.pause();
+                    }
+
+                    pauseTime = Math.max(0, Math.min(time, this.getDuration()));
+
+                    if (wasPlaying) {
+                        this.resume();
+                    }
+                },
+
+                /**
+                 * 设置播放速度
+                 * @param {number} rate - 播放速度（1.0为正常速度）
+                 */
+                setPlaybackRate: (rate) => {
+                    if (audioSource) {
+                        audioSource.playbackRate.value = rate;
+                        playbackRate = rate;
+                    }
                 },
 
                 /**
@@ -186,6 +311,13 @@ class Utils {
                  */
                 getAudioSource: () => {
                     return audioSource;
+                },
+
+                /**
+                 * 获取是否正在播放
+                 */
+                isPlaying: () => {
+                    return isPlaying;
                 },
             };
         } catch (error) {
@@ -207,6 +339,18 @@ class Utils {
 
         // 正常的取模运算
         return value - Math.round(value / mod) * mod;
+    }
+
+    static hexToRGBA(octal, a) {
+        const decimal = typeof octal === "string" ? parseInt(octal, 8) : octal;
+        const hex = decimal.toString(16).padStart(6, "0");
+        if (a !== undefined) {
+            const alpha = Math.round(Math.max(0, Math.min(1, a)) * 255)
+                .toString(16)
+                .padStart(2, "0");
+            return `#${hex}${alpha}`;
+        }
+        return `#${hex}`;
     }
 }
 

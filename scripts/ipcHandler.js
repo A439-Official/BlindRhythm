@@ -2,7 +2,7 @@ const { ipcMain } = require("electron");
 const fs = require("fs/promises");
 const path = require("path");
 
-function registerIPC(app, windowManager, songManager) {
+function registerIPC(app, windowManager, songManager, configManager) {
     ipcMain.handle("change-page", (event, pageId, data) => {
         if (!windowManager) {
             throw new Error("WindowManager not initialized");
@@ -57,6 +57,20 @@ function registerIPC(app, windowManager, songManager) {
             const content = await fs.readFile(fullPath);
             return content;
         } catch (error) {}
+    });
+
+    ipcMain.handle("get-config", async (event, key, defaultValue) => {
+        if (!configManager) {
+            throw new Error("ConfigManager not initialized");
+        }
+        return configManager.get(key, defaultValue);
+    });
+
+    ipcMain.handle("set-config", async (event, key, value) => {
+        if (!configManager) {
+            throw new Error("ConfigManager not initialized");
+        }
+        return configManager.set(key, value);
     });
 }
 

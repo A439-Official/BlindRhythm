@@ -12,18 +12,35 @@
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                z-index: 1000;
-                font-size: 5vh;
+                font-size: 6vh;
                 font-weight: bold;
                 text-shadow: 0 0 8px rgb(0, 0, 0);
                 transition: opacity 0.3s ease;
             }
+
+            .offset {
+                position: fixed;
+                bottom: 0%;
+                left: 50%;
+                transform: translate(-50%, -150%);
+            }
+
+            .acc {
+                position: fixed;
+                top: 0%;
+                right: 0%;
+                color: rgb(255, 255, 255);
+                font-size: 5vh;
+                text-shadow: 0 0 8px rgb(0, 0, 0);
+            }
         </style>
     </head>
     <body>
-        <div id="renderer"></div>
-        <div id="fps" class="fps"></div>
         <div id="judge" class="judge"></div>
+        <canvas id="offset" class="offset"></canvas>
+        <p id="acc" class="acc"></p>
+
+        <div id="renderer"></div>
     </body>
 </html>
 

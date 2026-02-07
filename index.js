@@ -38,7 +38,7 @@ app.whenReady().then(() => {
     const mainWindow = createWindow();
 
     // 设置IPC处理器
-    registerIPC(app, windowManager, songManager);
+    registerIPC(app, windowManager, songManager, configManager);
 
     windowManager.loadPage("welcome");
 

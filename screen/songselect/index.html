@@ -53,7 +53,6 @@
                 right: 2vw;
                 transform: translateY(-50%);
                 width: 46vw;
-                display: flex;
                 flex-direction: column;
                 gap: 1.5vh;
                 overflow-y: auto;
@@ -63,6 +62,7 @@
 
             /* 列表项 */
             .map-item {
+                margin: 3vh 0;
                 background: rgba(255, 255, 255, 0.08);
                 backdrop-filter: blur(10px);
                 color: white;
@@ -98,7 +98,6 @@
                 margin-top: 0;
                 margin-bottom: 0;
                 opacity: 0;
-                transition: all 0.3s ease;
             }
 
             .map-item.active .map-moreinfo {
