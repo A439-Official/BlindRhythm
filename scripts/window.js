@@ -17,7 +17,7 @@ class WindowManager {
             icon: path.join(__dirname, "../resources/textures/BR.png"),
             // frame: false,
             webPreferences: {
-                // preload: path.join(__dirname, "../preload.js"),
+                preload: path.join(__dirname, "../scripts/preload.js"),
                 nodeIntegration: true,
                 contextIsolation: false,
             },
