@@ -6,7 +6,16 @@ const { RenderPass } = require("three/addons/postprocessing/RenderPass.js");
 const { ShaderPass } = require("three/addons/postprocessing/ShaderPass.js");
 const { OutputPass } = require("three/addons/postprocessing/OutputPass.js");
 const Model = require("../../scripts/models.js");
-const { max, abs } = require("three/src/nodes/TSL.js");
+
+function disposeObject(obj) {
+    if (!obj) return;
+    obj.children?.forEach((child) => disposeObject(child));
+    obj.geometry?.dispose();
+    if (obj.material) {
+        (Array.isArray(obj.material) ? obj.material : [obj.material]).filter(Boolean).forEach((material) => material.dispose());
+    }
+    obj.dispose?.();
+}
 
 const scene = Utils.createScene();
 const camera = Utils.createCamera();
@@ -107,6 +116,7 @@ function getColor(time) {
 // 游玩设置
 const scrollSpeed = 8;
 const maxViewDistance = 10;
+const offset = 175; // 偏移ms
 
 // 判定
 // Perfect  100%    <=32ms
@@ -142,7 +152,7 @@ function updateJudgement(songTime) {
     // 判定
     let keyChecked = [false, false, false, false]; // 重复判定标记
     for (let i = 0; i < map.notes.length; i++) {
-        note = map.notes[i];
+        const note = map.notes[i];
         if (note.checked) {
             continue;
         }
@@ -218,13 +228,13 @@ function animate() {
     const fps = 1 / (golbalTime - lt);
     const songTime = golbalTime - startGameTime - 4.39;
 
-    if (map) {
+    if (map && playing) {
         updateJudgement(songTime);
     }
 
-    judgeElement = document.getElementById("judge");
+    const judgeElement = document.getElementById("judge");
     if (judgements[judgements.length - 1]) {
-        lastJudgement = judgements[judgements.length - 1];
+        const lastJudgement = judgements[judgements.length - 1];
         judgeElement.innerHTML = `${judgementText[lastJudgement.type]}`;
         judgeElement.style.fontSize = `${5 + (1 / (0.75 + songTime - lastJudgement.time / 1000)) ** 4}vh`;
     } else {
@@ -233,14 +243,15 @@ function animate() {
 
     // 刷新
     groups.forEach((group) => {
+        disposeObject(group);
         scene.remove(group);
     });
     groups = [];
 
     // 添加物体
     if (Model._texturesLoaded) {
-        defaultgroup = new THREE.Group();
-        for (i = 0; i < 4; i++) {
+        const defaultgroup = new THREE.Group();
+        for (let i = 0; i < 4; i++) {
             const track = new THREE.Group();
             track.position.set((i - 1.5) * 1.75, 0, 0);
             const receptor = Model.getArrow(keys[i] ? 0x7f7f7f : 0x000000);
@@ -253,13 +264,13 @@ function animate() {
                 if (note.track - 1 === i) {
                     if ((note.stopTime || note.time) / 1000 - songTime > 0 && note.time / 1000 - songTime < maxViewDistance / scrollSpeed) {
                         if (note.time / 1000 - songTime > 0) {
-                            arrow = Model.getArrow(getColor(note.time));
+                            const arrow = Model.getArrow(getColor(note.time));
                             arrow.position.set(0, 2.5 - (note.time / 1000 - songTime) * scrollSpeed, 0);
                             arrow.rotation.set(0, 0, (r / 180) * Math.PI);
                             track.add(arrow);
                         }
                         if (note.stopTime) {
-                            arrowBody = Model.getHold({ x: 0, y: 2.5, z: -0.0001 }, { x: 0, y: -1, z: 0 }, inn((note.time / 1000 - songTime) * scrollSpeed), inn((note.stopTime / 1000 - songTime) * scrollSpeed), (t) => {
+                            const arrowBody = Model.getHold({ x: 0, y: 2.5, z: -0.0001 }, { x: 0, y: -1, z: 0 }, inn((note.time / 1000 - songTime) * scrollSpeed), inn((note.stopTime / 1000 - songTime) * scrollSpeed), (t) => {
                                 return {
                                     x: 0,
                                     y: 0,
@@ -268,7 +279,7 @@ function animate() {
                             });
                             if (arrowBody) {
                                 track.add(arrowBody);
-                                holdend = Model.getHoldEnd();
+                                const holdend = Model.getHoldEnd();
                                 holdend.position.set(0, 2.5 - inn((note.stopTime / 1000 - songTime) * scrollSpeed), -0.0001);
                                 track.add(holdend);
                             }
@@ -295,7 +306,7 @@ function animate() {
     document.getElementById("fps").textContent = `FPS: ${Math.floor(fps)}`;
 
     // 在songTime等于0时播放音乐
-    if (songTime >= 0 && !audioPlayed) {
+    if (songTime >= -offset / 1000 && !audioPlayed) {
         audio.start();
         audioPlayed = true;
     }
