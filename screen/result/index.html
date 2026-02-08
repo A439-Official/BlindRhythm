@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="res:///css/style.css" />
+        <style>
+            * {
+                margin: 0;
+                color: rgb(255, 255, 255);
+            }
+
+            body {
+                background-size: cover;
+                background-position: top center;
+                background-repeat: no-repeat;
+                height: 100vh;
+            }
+
+            .title {
+                font-size: 8vh;
+                text-align: center;
+                top: 8vh;
+                left: 50vw;
+                transform: translateX(-50%);
+                position: absolute;
+                white-space: nowrap;
+                font-weight: bold;
+                text-shadow: 0 0 1vh rgb(0, 0, 0);
+            }
+
+            .difficulty {
+                font-size: 4vh;
+                text-align: center;
+                top: 18vh;
+                left: 50vw;
+                transform: translateX(-50%);
+                position: absolute;
+                white-space: nowrap;
+                font-weight: bold;
+                text-shadow: 0 0 1vh rgb(0, 0, 0);
+            }
+
+            .result {
+                background-color: rgba(0, 0, 0, 0.5);
+                width: 80vw;
+                height: 50vh;
+                position: absolute;
+                top: 30vh;
+                left: 50vw;
+                transform: translateX(-50%);
+            }
+
+            .acc {
+                font-size: 10vh;
+                text-align: center;
+                position: absolute;
+                top: 12.5vh;
+                left: 20vw;
+                transform: translate(-50%, -50%);
+                width: 40vw;
+                height: auto;
+            }
+
+            .judgement-container {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 2vh;
+                text-align: center;
+                font-size: 4vh;
+                position: absolute;
+                top: 37.5vh;
+                left: 20vw;
+                transform: translate(-50%, -50%);
+                width: 40vw;
+                height: auto;
+            }
+
+            .judgement-container p {
+                margin: 0;
+            }
+
+            .offset {
+                position: absolute;
+                left: 40vw;
+                width: 40vw;
+                height: 50vh;
+            }
+        </style>
+    </head>
+    <body>
+        <p class="title" id="title"></p>
+        <p class="difficulty" id="difficulty"></p>
+        <div class="result" id="result">
+            <p class="acc" id="acc"></p>
+            <div class="judgement-container">
+                <p class="perfect" id="perfect"></p>
+                <p class="great" id="great"></p>
+                <p class="good" id="good"></p>
+                <p class="miss" id="miss"></p>
+            </div>
+            <canvas class="offset" id="offset"></canvas>
+        </div>
+    </body>
+</html>
+
+<script src="index.js"></script>

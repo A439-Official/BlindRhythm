@@ -6,6 +6,7 @@ const { RenderPass } = require("three/addons/postprocessing/RenderPass.js");
 const { ShaderPass } = require("three/addons/postprocessing/ShaderPass.js");
 const { OutputPass } = require("three/addons/postprocessing/OutputPass.js");
 const Model = require("../../scripts/models.js");
+const { color } = require("three/src/nodes/TSL.js");
 
 function disposeObject(obj) {
     if (!obj) return;
@@ -32,15 +33,8 @@ const uniforms = {
 };
 const outputPass = new OutputPass();
 
-(async () => {
-    const data = await Utils.data();
-    const song = await ipcRenderer.invoke("get-song-by-dir", data.dir);
-    const mapdata = await ipcRenderer.invoke("song-file", `${data.dir}/${data.mapID}.brm`);
-    map = JSON.parse(mapdata);
-    loadGame(data, song);
-})();
-
 // 杂七杂八的变量
+let data;
 let bgTexture;
 let playing = false;
 let startGameTime;
@@ -75,7 +69,15 @@ const judgementACC = [1, 0.8, 0.3, 0];
 // type: 结果
 let judgements = [];
 
-async function loadGame(data, songInfo) {
+(async () => {
+    data = await Utils.data();
+    const song = await ipcRenderer.invoke("get-song-by-dir", data.dir);
+    const mapdata = await ipcRenderer.invoke("song-file", `${data.dir}/${data.mapID}.brm`);
+    map = JSON.parse(mapdata);
+    loadGame(song);
+})();
+
+async function loadGame(songInfo) {
     offset = await Utils.getConfig("gameplay.offset", 0);
 
     // 加载游戏
@@ -238,6 +240,22 @@ function animate() {
     lt = golbalTime;
     golbalTime = Utils.time();
     const fps = 1 / (golbalTime - lt);
+
+    // 检查歌曲是否结束
+    if (audioPlayed) {
+        if (audio.getCurrentTime() > audio.getDuration() + 2) {
+            Utils.to("result", {
+                judgements: judgements,
+                data: data,
+                judgementACC: judgementACC,
+                judgementColor: judgementColor,
+                judgementText: judgementText,
+                judgementTime: judgementTime,
+                songLength: audio.getDuration(),
+            });
+        }
+    }
+
     let songTime = golbalTime - startGameTime - 4.39;
     if (audio && audio.isPlaying()) {
         if (Math.abs(audio.getCurrentTime() - offset / 1000 - songTime) > 0.05) {

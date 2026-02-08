@@ -12,8 +12,8 @@ class Utils {
         return (Date.now() - this.pageStartTime) / 1000;
     }
 
-    static to(pageId) {
-        ipcRenderer.invoke("change-page", pageId);
+    static to(pageId, data) {
+        ipcRenderer.invoke("change-page", pageId, data);
     }
 
     static quit() {

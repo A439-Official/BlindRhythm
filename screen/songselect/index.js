@@ -1,5 +1,6 @@
 const { ipcRenderer } = require("electron");
 const RadioSelectionManager = require("../../scripts/radioManager");
+const Utils = require("../../scripts/utils");
 
 let songItems = [];
 let radioManager;
@@ -41,7 +42,7 @@ ipcRenderer.invoke("get-songs").then((songs) => {
         items: songItems,
         onSelect: handleSongSelect,
         onConfirm: (selectedItem) => {
-            ipcRenderer.invoke("change-page", "gameplay", {
+            Utils.to("gameplay", {
                 dir: selectedItem.dir,
                 songID: selectedItem.id,
                 mapID: selectedItem.map.id,
