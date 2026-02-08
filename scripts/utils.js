@@ -13,7 +13,51 @@ class Utils {
     }
 
     static to(pageId, data) {
-        ipcRenderer.invoke("change-page", pageId, data);
+        // 如果已经有淡出动画正在进行，则直接返回
+        if (Utils._fadeOutInProgress) {
+            return;
+        }
+
+        Utils._fadeOutInProgress = true;
+
+        // 创建淡出覆盖层
+        let fadeOverlay = document.getElementById("fade-overlay");
+        if (!fadeOverlay) {
+            fadeOverlay = document.createElement("div");
+            fadeOverlay.id = "fade-overlay";
+            fadeOverlay.style.position = "fixed";
+            fadeOverlay.style.top = "0";
+            fadeOverlay.style.left = "0";
+            fadeOverlay.style.width = "100%";
+            fadeOverlay.style.height = "100%";
+            fadeOverlay.style.zIndex = "9999";
+            fadeOverlay.style.backgroundColor = "rgba(0, 0, 0, 0)";
+            fadeOverlay.style.pointerEvents = "none";
+            document.body.appendChild(fadeOverlay);
+        }
+
+        const startTime = Date.now();
+        const duration = 1000; // 1秒
+
+        function animateFadeOut() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // 透明度从0增加到1
+            const alpha = progress;
+            fadeOverlay.style.backgroundColor = `rgba(0, 0, 0, ${alpha})`;
+
+            if (progress < 1) {
+                requestAnimationFrame(animateFadeOut);
+            } else {
+                // 动画完成，切换页面
+                ipcRenderer.invoke("change-page", pageId, data);
+                // 重置状态，新页面加载后会重新初始化
+                Utils._fadeOutInProgress = false;
+            }
+        }
+
+        requestAnimationFrame(animateFadeOut);
     }
 
     static quit() {

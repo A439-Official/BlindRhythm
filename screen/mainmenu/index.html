@@ -5,7 +5,16 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="res:///css/style.css" />
         <style>
-            .bottom-list {
+            body {
+                color: rgb(255, 255, 255);
+                margin: 0;
+                padding: 0;
+                height: 100vh;
+                width: 100vw;
+                overflow: hidden;
+            }
+
+            .menu-list {
                 position: absolute;
                 left: 3vw;
                 top: 50%;
@@ -17,15 +26,14 @@
                 width: 25vw;
             }
 
-            .menu-button {
-                background: rgba(255, 255, 255, 0.1);
-                backdrop-filter: blur(10px);
-                color: white;
-                border: 0.2vh solid rgba(255, 255, 255, 0.3);
+            .menu-item {
+                background: var(--dark1);
+                color: rgb(255, 255, 255);
+                border: 1px solid var(--border);
                 padding: 2vh 2vw;
-                font: 600 2vh sans-serif;
-                border-radius: 1vh;
+                font-size: 2.5vh;
                 cursor: pointer;
+                border-radius: 1vh;
                 width: 100%;
                 text-align: center;
                 min-height: 8vh;
@@ -35,24 +43,34 @@
                 transition: all 0.3s ease;
             }
 
-            .menu-button:hover {
-                background: rgba(255, 255, 255, 0.2);
-                border-color: rgba(255, 255, 255, 0.5);
+            .menu-item:hover {
+                background: var(--dark2);
+                border-color: var(--primary);
                 transform: translateX(0.8vw);
             }
 
-            .menu-button.active {
-                background: rgba(255, 255, 255, 0.3);
-                border-color: rgba(255, 255, 255, 0.8);
-                box-shadow: 0 0 1vh rgba(255, 255, 255, 0.5);
+            .menu-item.active {
+                background: var(--dark3);
+                border-color: var(--primary);
+                box-shadow: 0 0 1vh var(--primary-shadow);
+            }
+
+            #renderer {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: -999;
+                pointer-events: none;
             }
         </style>
     </head>
     <body>
-        <div class="bottom-list">
-            <button class="menu-button" id="songselect-btn">SONG SELECT</button>
-            <button class="menu-button" id="settings-btn">SETTINGS</button>
-            <button class="menu-button" id="quit-btn">QUIT</button>
+        <div class="menu-list">
+            <button class="menu-item" id="songselect-btn">歌曲选择</button>
+            <button class="menu-item" id="settings-btn">游戏设置</button>
+            <button class="menu-item" id="quit-btn">退出游戏</button>
         </div>
 
         <div id="renderer"></div>

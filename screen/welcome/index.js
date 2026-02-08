@@ -43,6 +43,7 @@ function animate() {
         logoObject.material.opacity = 1 - t;
     });
     if (time > 3) {
+        logoObject.material.opacity = 0;
         Utils.to("mainmenu");
     }
     composer.render();

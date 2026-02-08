@@ -5,123 +5,141 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="res:///css/style.css" />
         <style>
-            /* 曲绘 */
-            .song-illustration {
-                position: absolute;
-                top: 2vh;
-                left: 2vw;
-                width: 46vw;
-                height: 46vh;
+            body {
+                color: rgb(255, 255, 255);
+                margin: 0;
+                padding: 0;
+                height: 100vh;
+                width: 100vw;
             }
 
-            .song-illustration img {
+            .song-background {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: -998;
+            }
+
+            .song-background img {
                 object-fit: cover;
                 width: 100%;
                 height: 100%;
-                border-radius: 2vh;
+                filter: brightness(0.6);
             }
 
-            /* 歌曲信息 */
-            .song-info {
-                position: absolute;
-                bottom: 2vh;
-                left: 2vw;
-                width: 46vw;
-                height: 46vh;
+            .songselect-container {
+                display: flex;
+                width: 100%;
+                height: 100%;
                 padding: 2vh 2vw;
+                box-sizing: border-box;
+            }
+
+            .song-info-panel {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                padding: 0 2vw;
+                margin-right: 2vw;
+                background: rgba(17, 17, 17, 0.7);
+                border-radius: 2vh;
+                border: 1px solid var(--border);
             }
 
             .song-title {
-                margin: 0 0 1.5vh;
-                font-size: 3.5vh;
+                margin: 4vh 0 2vh;
+                font-size: 6vh;
                 font-weight: 700;
-                color: #fff;
-                text-shadow: 0 0.2vh 0.4vh rgba(0, 0, 0, 0.5);
             }
 
             .song-artist,
-            .song-creator {
-                margin: 0.8vh 0;
-                font-size: 2vh;
-                color: rgba(255, 255, 255, 0.85);
+            .map-name {
+                margin: 1vh 0;
+                font-size: 2.5vh;
+                color: var(--dark6);
             }
 
-            /* 歌曲列表 */
-            .song-list {
-                position: absolute;
-                top: 50%;
-                right: 2vw;
-                transform: translateY(-50%);
-                width: 46vw;
-                flex-direction: column;
-                gap: 1.5vh;
-                overflow-y: auto;
-                padding: 2vh 1vw;
-                max-height: 96vh;
-            }
-
-            /* 列表项 */
-            .map-item {
-                margin: 3vh 0;
-                background: rgba(255, 255, 255, 0.08);
-                backdrop-filter: blur(10px);
-                color: white;
-                border: 0.15vh solid rgba(255, 255, 255, 0.15);
-                padding: 2vh 2vw;
-                font-size: 2vh;
-                border-radius: 1.2vh;
-                cursor: pointer;
-                min-height: 8vh;
+            .song-list-container {
+                width: 40vw;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
-                opacity: 0.9;
-                transition: all 0.3s ease;
+                background: var(--dark-alpha);
+                border-radius: 2vh;
+                border: 1px solid var(--border);
             }
 
-            .map-item:hover {
-                background: rgba(255, 255, 255, 0.15);
-                border-color: rgba(255, 255, 255, 0.3);
-                transform: translateX(-0.5vw);
-                opacity: 1;
+            .song-list-header {
+                padding: 2vh 2vw;
+                border-bottom: 1px solid var(--border);
+                font-size: 3vh;
+                font-weight: bold;
+            }
+
+            .song-list {
+                overflow-y: auto;
+                padding: 2vh 1vw;
+                display: flex;
+                flex-direction: column;
+                gap: 1vh;
+            }
+
+            .map-item {
+                background: var(--dark-alpha);
+                color: var(--dark6);
+                padding: 2vh 2vw;
+                font-size: 2.5vh;
+                transition: all 0.2s ease;
+                border-radius: 1vh;
             }
 
             .map-item.active {
-                background: rgba(66, 133, 244, 0.25);
-                border-color: rgba(66, 133, 244, 0.5);
-                box-shadow: 0 0 2vh rgba(66, 133, 244, 0.3);
-                opacity: 1;
+                background: var(--dark3);
+                color: rgb(255, 255, 255);
             }
 
-            .map-item .map-moreinfo {
-                max-height: 0;
-                margin-top: 0;
-                margin-bottom: 0;
-                opacity: 0;
+            .map-item h2 {
+                margin: 1vh;
+                font-size: 2.5vh;
             }
 
-            .map-item.active .map-moreinfo {
-                max-height: 100vh;
-                margin-top: auto;
-                margin-bottom: auto;
-                opacity: 1;
+            .map-item small {
+                color: var(--dark4);
+            }
+
+            .map-item.active small {
+                color: var(--dark6);
+            }
+
+            #renderer {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: -999;
+                pointer-events: none;
             }
         </style>
     </head>
     <body>
-        <div class="song-illustration">
+        <div class="song-background">
             <img src="" alt="无曲绘" />
         </div>
 
-        <div class="song-info">
-            <h1 class="song-title"></h1>
-            <p class="song-artist"></p>
-            <p class="song-creator"></p>
-            <p class="map-name"></p>
-            <p class="map-difficulty"></p>
-        </div>
+        <div class="songselect-container">
+            <div class="song-info-panel">
+                <h1 class="song-title"></h1>
+                <p class="song-artist"></p>
+                <p class="map-name"></p>
+            </div>
 
-        <div class="song-list"></div>
+            <div class="song-list-container">
+                <div class="song-list-header">歌曲列表</div>
+                <div class="song-list"></div>
+            </div>
+        </div>
 
         <div id="renderer"></div>
     </body>

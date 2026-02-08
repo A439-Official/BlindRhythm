@@ -6,6 +6,21 @@
     font-display: swap;
 }
 
+/* colors */
+:root {
+    --primary: #f6b5ff;
+    --primary-shadow: #f6b5ff7f;
+    --border: #fbdfff;
+    --dark1: #111111;
+    --dark2: #222222;
+    --dark3: #333333;
+    --dark4: #444444;
+    --dark5: #555555;
+    --dark6: #666666;
+    --dark7: #777777;
+    --dark-alpha: rgba(0, 0, 0, 0.5);
+}
+
 * {
     /* margin: 0; */
     font-family: "ResourceHanRoundedCN-Regular";
@@ -14,6 +29,7 @@
     -moz-user-select: none;
     -webkit-user-select: none;
     user-select: none;
+    outline: none;
 }
 
 ::-webkit-scrollbar {
@@ -36,4 +52,75 @@ html {
     height: 100%;
     z-index: -999;
     background-color: #000000;
+}
+
+/* checkbox styles */
+.checkbox {
+    width: 5vw;
+    height: 5vh;
+    cursor: pointer;
+    accent-color: var(--primary);
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: var(--dark-alpha);
+    border-radius: 1vh;
+    position: relative;
+    transition: background 0.2s ease;
+}
+
+.checkbox:checked {
+    background: var(--primary);
+}
+
+/* slider styles */
+.slider {
+    padding: 0;
+    background: var(--dark-alpha);
+    border-radius: 1vh;
+    width: 20vw;
+    height: 2vh;
+    -webkit-appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 4vh;
+    height: 4vh;
+    background: var(--primary);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* number input styles */
+.number {
+    padding: 1vh;
+    background: var(--dark-alpha);
+    border: none;
+    border-radius: 1vh;
+    color: rgb(255, 255, 255);
+    font-size: 2vh;
+    width: 8vw;
+    text-align: center;
+}
+
+.number::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+/* binding styles */
+.binding {
+    padding: 1vh 1.5vw;
+    background: var(--dark-alpha);
+    border-radius: 1vh;
+    color: rgb(255, 255, 255);
+    font-size: 2vh;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    width: 8vw;
+    text-align: center;
+}
+
+.binding.recording {
+    background: var(--primary);
 }

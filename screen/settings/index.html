@@ -5,35 +5,171 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="res:///css/style.css" />
         <style>
-            .offset-control {
-                margin: 20px 0;
+            body {
+                color: rgb(255, 255, 255);
+                margin: 0;
+                padding: 0;
+                height: 100vh;
+                width: 100vw;
+                overflow: hidden;
             }
-            .offset-control label {
+
+            .settings-container {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            .settings-header {
+                padding: 2vh 3vw;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .settings-header h1 {
+                margin: 2vh;
+                font-size: 5vh;
+                font-weight: bold;
+            }
+
+            .settings-content {
+                display: flex;
+                flex: 1;
+                overflow: hidden;
+            }
+
+            .settings-tabs {
+                width: 20vw;
+                border-right: 1px solid var(--border);
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .tab-button {
+                background: transparent;
+                color: var(--dark3);
+                border: none;
+                padding: 2vh 2vw;
+                font-size: 2.5vh;
+                cursor: pointer;
+                border-left: 0 solid transparent;
+                display: flex;
+                gap: 1vw;
+                transition:
+                    background 0.2s ease,
+                    border 0.2s ease;
+            }
+
+            .tab-button:hover {
+                background: var(--dark1);
+            }
+
+            .tab-button.active {
+                background: var(--dark3);
+                color: rgb(255, 255, 255);
+                border-left-color: var(--primary);
+                border-width: 0.5vw;
+            }
+
+            .settings-panel {
+                flex: 1;
+                padding: 3vh 3vw;
+                display: none;
+            }
+
+            .settings-panel.active {
                 display: block;
-                margin-bottom: 8px;
-                font-weight: bold;
             }
-            .offset-control input {
-                width: 120px;
-                padding: 8px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                font-size: 16px;
+
+            .settings-group {
+                margin-bottom: 4vh;
             }
-            .offset-value {
-                margin-left: 10px;
-                font-weight: bold;
-                color: #333;
+
+            .settings-group h3 {
+                margin: 0 0 2vh 0;
+                font-size: 3vh;
+                padding-bottom: 1vh;
+            }
+
+            .setting-item {
+                margin-bottom: 1.5vh;
+                display: flex;
+                align-items: center;
+                padding: 3vh;
+                background: var(--dark1);
+                border-radius: 1vh;
+                transition: background 0.2s ease;
+            }
+
+            .setting-item:hover {
+                background: var(--dark2);
+            }
+
+            .setting-label {
+                flex: 1;
+            }
+
+            .setting-label h4 {
+                margin: 0 0 0.5vh 0;
+                font-size: 2.5vh;
+            }
+
+            .setting-label p {
+                margin: 0;
+                font-size: 2vh;
+                color: var(--dark6);
+            }
+
+            .setting-control {
+                width: 32vw;
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+            }
+
+            #renderer {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: -999;
+                pointer-events: none;
             }
         </style>
     </head>
     <body>
-        <h1>设置</h1>
-        <h2>游玩设置</h2>
-        <div class="offset-control">
-            <label for="offset-input">偏移</label>
-            <input type="number" id="offset-input" min="-200" max="200" step="1" value="0" />
+        <div class="settings-container">
+            <div class="settings-header">
+                <h1>游戏设置</h1>
+            </div>
+
+            <div class="settings-content">
+                <div class="settings-tabs">
+                    <button class="tab-button active" data-tab="game">
+                        <span>游戏设置</span>
+                    </button>
+                    <button class="tab-button" data-tab="audio">
+                        <span>音频设置</span>
+                    </button>
+                    <button class="tab-button" data-tab="video">
+                        <span>视频设置</span>
+                    </button>
+                    <button class="tab-button" data-tab="controls">
+                        <span>控制设置</span>
+                    </button>
+                </div>
+
+                <div class="settings-panel active" id="game-panel"></div>
+                <div class="settings-panel" id="audio-panel"></div>
+                <div class="settings-panel" id="video-panel"></div>
+                <div class="settings-panel" id="controls-panel"></div>
+            </div>
         </div>
+
+        <div id="renderer"></div>
     </body>
 </html>
 

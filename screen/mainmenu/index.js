@@ -57,7 +57,9 @@ function animate() {
         });
     }
     for (let i = 0; i < arrows.length; i++) {
-        arrows[i].rotation.z = (90 / 180) * Math.PI + Math.sin(time / (2 ^ 1.5) + i * 8) * Math.PI - Math.sin(time / (2 ^ 0.5) + i * 8) * Math.PI;
+        arrows[i].position.x = Math.sin(time / 3 ** 1 + i * 5) * 0.5 + Math.cos(time / 2 ** 3 + i * 2) * 1.5;
+        arrows[i].position.y = Math.cos(time / 2 ** 2 + i * 7) * 0.5 + Math.sin(time / 2 ** 0.5 + i * 1) * 1.5;
+        arrows[i].rotation.z = (90 / 180) * Math.PI + Math.sin(time / 2 ** 1.5 + i * 8) * Math.PI - Math.sin(time / 2 ** 0.5 + i * 7) * Math.PI;
     }
     composer.render();
 }

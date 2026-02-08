@@ -78,7 +78,7 @@ let judgements = [];
 })();
 
 async function loadGame(songInfo) {
-    offset = await Utils.getConfig("gameplay.offset", 0);
+    offset = await Utils.getConfig("offset", 0);
 
     // 加载游戏
     const textureLoader = new THREE.TextureLoader();
@@ -300,13 +300,7 @@ function animate() {
                             track.add(arrow);
                         }
                         if (note.stopTime) {
-                            const arrowBody = Model.getHold({ x: 0, y: 2.5, z: -0.0001 }, { x: 0, y: -1, z: 0 }, inn((note.time / 1000 - songTime) * scrollSpeed), inn((note.stopTime / 1000 - songTime) * scrollSpeed), (t) => {
-                                return {
-                                    x: 0,
-                                    y: 0,
-                                    z: 0,
-                                };
-                            });
+                            const arrowBody = Model.getHold({ x: 0, y: 2.5, z: -0.0001 }, { x: 0, y: -1, z: 0 }, inn((note.time / 1000 - songTime) * scrollSpeed), inn((note.stopTime / 1000 - songTime) * scrollSpeed));
                             if (arrowBody) {
                                 track.add(arrowBody);
                                 const holdend = Model.getHoldEnd();
@@ -403,3 +397,9 @@ window.addEventListener("resize", () => {
 });
 
 window.addEventListener("blur", () => keys.fill(false));
+
+window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+        Utils.to("songselect");
+    }
+});

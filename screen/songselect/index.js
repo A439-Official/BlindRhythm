@@ -6,11 +6,19 @@ let songItems = [];
 let radioManager;
 
 function handleSongSelect(selectedItem) {
-    const illustImg = document.querySelector(".song-illustration img");
+    // 更新背景曲绘
+    const backgroundImg = document.querySelector(".song-background img");
     if (selectedItem && selectedItem.backgroundFile) {
-        illustImg.src = `song:///${selectedItem.dir}/${selectedItem.backgroundFile}`;
+        backgroundImg.src = `song:///${selectedItem.dir}/${selectedItem.backgroundFile}`;
     } else {
-        illustImg.src = "res:///textures/Illustration.png";
+        backgroundImg.src = "res:///textures/Illustration.png";
+    }
+
+    // 更新歌曲信息
+    if (selectedItem) {
+        document.querySelector(".song-title").textContent = selectedItem.title || "";
+        document.querySelector(".song-artist").textContent = `- ${selectedItem.artist}` || "";
+        document.querySelector(".map-name").textContent = `[${selectedItem.map?.name}] by ${selectedItem.creator}` || "";
     }
 }
 
@@ -23,9 +31,7 @@ ipcRenderer.invoke("get-songs").then((songs) => {
         difficulties.forEach((map) => {
             const difficultyItem = document.createElement("div");
             difficultyItem.className = "map-item";
-            difficultyItem.innerHTML = `
-                <h2>${song.title} <small>[${map.name}]</small></h2>
-                <p class="map-moreinfo"> - ${song.artist}</p>`;
+            difficultyItem.innerHTML = `<h2>${song.title} <small>[${map.name}]</small></h2>`;
 
             songItems.push({
                 ...song,
@@ -53,3 +59,9 @@ ipcRenderer.invoke("get-songs").then((songs) => {
 
 const bg = document.getElementById("renderer");
 bg.style.backgroundColor = "rgba(0, 0, 0, 1)";
+
+window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+        Utils.to("mainmenu");
+    }
+});

@@ -56,7 +56,7 @@ function update() {
     }
     ctx.clearRect(0, 0, offset.width, offset.height);
     ctx.strokeStyle = "rgb(127, 127, 127)";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = window.innerHeight * 0.001;
     ctx.beginPath();
     ctx.moveTo(0, offset.height / 2);
     ctx.lineTo(offset.width, offset.height / 2);
@@ -65,9 +65,15 @@ function update() {
         const x = (j.time / 1000 / data.songLength) * offset.width;
         const y = offset.height * (0.5 + ((j.offset / data.judgementTime[data.judgementTime.length - 1]) * 1000) / 2);
         ctx.beginPath();
-        ctx.arc(x, y, 2, 0, 2 * Math.PI);
+        ctx.arc(x, y, window.innerHeight * 0.0025, 0, 2 * Math.PI);
         ctx.fillStyle = Utils.hexToRGBA(data.judgementColor[j.type]);
         ctx.fill();
     });
     requestAnimationFrame(update);
 }
+
+window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+        Utils.to("songselect");
+    }
+});
