@@ -9,7 +9,9 @@ let data;
 
     console.log(data);
 
-    document.body.style.backgroundImage = `url("song:///${data.data.dir}/${map.backgroundFile}")`;
+    if (map.backgroundFile) {
+        document.body.style.backgroundImage = `url("song:///${data.data.dir}/${map.backgroundFile}")`;
+    }
 
     const title = document.getElementById("title");
     title.innerText = map.title;

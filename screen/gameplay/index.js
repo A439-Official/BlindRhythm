@@ -8,16 +8,6 @@ const { OutputPass } = require("three/addons/postprocessing/OutputPass.js");
 const Model = require("../../scripts/models.js");
 const { color } = require("three/src/nodes/TSL.js");
 
-function disposeObject(obj) {
-    if (!obj) return;
-    obj.children?.forEach((child) => disposeObject(child));
-    obj.geometry?.dispose();
-    if (obj.material) {
-        (Array.isArray(obj.material) ? obj.material : [obj.material]).filter(Boolean).forEach((material) => material.dispose());
-    }
-    obj.dispose?.();
-}
-
 const scene = Utils.createScene();
 const camera = Utils.createCamera();
 const renderer = Utils.createRenderer();
@@ -69,6 +59,34 @@ const judgementACC = [1, 0.8, 0.3, 0];
 // offset: 偏差
 // type: 结果
 let judgements = [];
+
+function disposeObject(obj) {
+    if (!obj) return;
+    obj.children?.forEach((child) => disposeObject(child));
+    obj.geometry?.dispose();
+    if (obj.material) {
+        (Array.isArray(obj.material) ? obj.material : [obj.material]).filter(Boolean).forEach((material) => material.dispose());
+    }
+    obj.dispose?.();
+}
+
+/**
+ * 递归合并对象，忽略重复值
+ * @param {Object} source - 目标对象
+ * @param {Object} data - 要合并的对象
+ * @returns {Object} 合并后的对象
+ */
+function merge(source, data) {
+    const result = { ...source };
+    for (const key in data) {
+        if (result[key] === undefined) {
+            result[key] = data[key];
+        } else if (typeof result[key] === "object" && result[key] !== null && !Array.isArray(result[key]) && typeof data[key] === "object" && data[key] !== null && !Array.isArray(data[key])) {
+            result[key] = merge(result[key], data[key]);
+        }
+    }
+    return result;
+}
 
 /**
  * 从对象中根据路径获取值
@@ -136,6 +154,7 @@ async function loadGame(songInfo) {
                 if (scriptCode) {
                     scripts[scriptName] = (t) => {
                         return Utils.run(scriptCode, {
+                            merge,
                             time: t,
                         });
                     };
@@ -296,7 +315,7 @@ function animate() {
 
     let songTime = golbalTime - startGameTime - 4.39;
     if (audio && audio.isPlaying()) {
-        if (Math.abs(audio.getCurrentTime() - offset / 1000 - songTime) > 0.05) {
+        if (Math.abs(audio.getCurrentTime() - offset / 1000 - songTime) > 0.03125) {
             songTime = audio.getCurrentTime() - offset / 1000;
         }
     }
@@ -313,13 +332,13 @@ function animate() {
     }
 
     // 脚本
-    const modify = {
-        default: {},
+    let modify = {
+        main: {},
     };
     if (map && playing) {
         for (const scriptName in scripts) {
             const result = scripts[scriptName](songTime);
-            Object.assign(modify, result);
+            modify = merge(modify, result);
         }
     }
 
@@ -350,6 +369,7 @@ function animate() {
                 receptor.position.set(0, 2.5, 0);
                 const r = [90, 180, 0, -90][i];
                 receptor.rotation.set(0, 0, (r / 180) * Math.PI);
+                receptor.scale.set(1.5 * gv(`tracks.${tN}.notes.scale.x`, gv(`notes.scale.x`, 1)), 1.5 * gv(`tracks.${tN}.notes.scale.y`, gv(`notes.scale.y`, 1)), 1.5 * gv(`tracks.${tN}.notes.scale.z`, gv(`notes.scale.z`, 1)));
                 track.add(receptor);
                 map.notes.forEach((note) => {
                     if (note.track - 1 === i) {
@@ -365,15 +385,17 @@ function animate() {
                                         return { x: 0, y: 0, z: 0 };
                                     }),
                                 )((note.time / 1000 - songTime) * scrollSpeed);
-                                arrowX = arrowX + nP.x || 0;
-                                arrowY = arrowY + nP.y || 0;
-                                arrowZ = arrowZ + nP.z || 0;
+                                arrowX = arrowX + (nP.x || 0);
+                                arrowY = arrowY + (nP.y || 0);
+                                arrowZ = arrowZ + (nP.z || 0);
                                 arrow.position.set(arrowX, arrowY, arrowZ);
-                                arrow.rotation.set(
-                                    (gv(`tracks.${tN}.notes.rotation.x`, gv(`notes.rotation.x`, 0)) / 180) * Math.PI,
-                                    (gv(`tracks.${tN}.notes.rotation.y`, gv(`notes.rotation.y`, 0)) / 180) * Math.PI,
-                                    ((r + gv(`tracks.${tN}.notes.rotation.z`, gv(`notes.rotation.z`, 0))) / 180) * Math.PI,
-                                );
+                                nR = gv(
+                                    `tracks.${tN}.notes.rotation`,
+                                    gv(`notes.rotation`, (a) => {
+                                        return { x: 0, y: 0, z: 0 };
+                                    }),
+                                )((note.time / 1000 - songTime) * scrollSpeed);
+                                arrow.rotation.set((nR.x || 0 / 180) * Math.PI, (nR.y || 0 / 180) * Math.PI, ((r + (nR.z || 0)) / 180) * Math.PI);
                                 arrow.scale.set(1.5 * gv(`tracks.${tN}.notes.scale.x`, gv(`notes.scale.x`, 1)), 1.5 * gv(`tracks.${tN}.notes.scale.y`, gv(`notes.scale.y`, 1)), 1.5 * gv(`tracks.${tN}.notes.scale.z`, gv(`notes.scale.z`, 1)));
                                 track.add(arrow);
                             }
@@ -400,9 +422,9 @@ function animate() {
                                             return { x: 0, y: 0, z: 0 };
                                         }),
                                     )((note.stopTime / 1000 - songTime) * scrollSpeed);
-                                    holdendX = holdendX + nP.x || 0;
-                                    holdendY = holdendY + nP.y || 0;
-                                    holdendZ = holdendZ + nP.z || 0;
+                                    holdendX = holdendX + (nP.x || 0);
+                                    holdendY = holdendY + (nP.y || 0);
+                                    holdendZ = holdendZ + (nP.z || 0);
                                     holdend.position.set(holdendX, holdendY, holdendZ);
                                     track.add(holdend);
                                 }
