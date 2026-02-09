@@ -47,6 +47,7 @@ let keys = [false, false, false, false]; // 按键状态
 let keysLastFrame = [...keys];
 let acc = 1;
 let accLastFrame = acc;
+let scripts = {};
 
 // 游玩设置
 const scrollSpeed = 10;
@@ -68,6 +69,27 @@ const judgementACC = [1, 0.8, 0.3, 0];
 // offset: 偏差
 // type: 结果
 let judgements = [];
+
+/**
+ * 从对象中根据路径获取值
+ * @param {Object} obj - 源对象
+ * @param {string} path - 点分隔的路径
+ * @param {*} defaultValue - 如果路径不存在则返回的默认值
+ * @returns {*} 找到的值或默认值
+ */
+function getValue(obj, path, defaultValue) {
+    if (!obj || typeof obj !== "object") return defaultValue;
+    const keys = path.split(".");
+    let current = obj;
+    for (const key of keys) {
+        if (current && typeof current === "object" && key in current) {
+            current = current[key];
+        } else {
+            return defaultValue;
+        }
+    }
+    return current;
+}
 
 (async () => {
     data = await Utils.data();
@@ -105,6 +127,22 @@ async function loadGame(songInfo) {
         }),
     );
     composer.addPass(outputPass);
+
+    // 加载自定义脚本
+    await Promise.all(
+        map.scripts.map(async (scriptName) => {
+            try {
+                const scriptCode = await ipcRenderer.invoke("song-file", `${data.dir}/scripts/${scriptName}.js`);
+                if (scriptCode) {
+                    scripts[scriptName] = (t) => {
+                        return Utils.run(scriptCode, {
+                            time: t,
+                        });
+                    };
+                }
+            } catch (e) {}
+        }),
+    );
 
     map.notes.sort((a, b) => {
         return a.time - b.time;
@@ -274,6 +312,17 @@ function animate() {
         updateJudgement(songTime);
     }
 
+    // 脚本
+    const modify = {
+        default: {},
+    };
+    if (map && playing) {
+        for (const scriptName in scripts) {
+            const result = scripts[scriptName](songTime);
+            Object.assign(modify, result);
+        }
+    }
+
     // 绘制（我不会模型复用:sad:）
     groups.forEach((group) => {
         disposeObject(group);
@@ -281,40 +330,91 @@ function animate() {
     });
     groups = [];
     if (Model._texturesLoaded && map) {
-        const defaultgroup = new THREE.Group();
-        for (let i = 0; i < 4; i++) {
-            const track = new THREE.Group();
-            track.position.set((i - 1.5) * 1.75, 0, 0);
-            const receptor = Model.getArrow(keys[i] ? 0x7f7f7f : 0x000000);
-            receptor.position.set(0, 2.5, 0);
-            const r = [90, 180, 0, -90][i];
-            receptor.rotation.set(0, 0, (r / 180) * Math.PI);
-            track.add(receptor);
-            map.notes.forEach((note) => {
-                if (note.track - 1 === i) {
-                    if ((note.stopTime || note.time) / 1000 - songTime > 0 && note.time / 1000 - songTime < maxViewDistance / scrollSpeed) {
-                        if (note.time / 1000 - songTime > 0) {
-                            const arrow = Model.getArrow(getColor(note.time));
-                            arrow.position.set(0, 2.5 - (note.time / 1000 - songTime) * scrollSpeed, 0);
-                            arrow.rotation.set(0, 0, (r / 180) * Math.PI);
-                            track.add(arrow);
-                        }
-                        if (note.stopTime) {
-                            const arrowBody = Model.getHold({ x: 0, y: 2.5, z: -0.0001 }, { x: 0, y: -1, z: 0 }, inn((note.time / 1000 - songTime) * scrollSpeed), inn((note.stopTime / 1000 - songTime) * scrollSpeed));
-                            if (arrowBody) {
-                                track.add(arrowBody);
-                                const holdend = Model.getHoldEnd();
-                                holdend.position.set(0, 2.5 - inn((note.stopTime / 1000 - songTime) * scrollSpeed), -0.0001);
-                                track.add(holdend);
+        for (let gi = 0; gi < Object.keys(modify).length; gi++) {
+            const group = new THREE.Group();
+            const groupName = Object.keys(modify)[gi];
+            const groupData = modify[groupName];
+            const gv = (path, defaultValue) => {
+                return getValue(groupData, path, defaultValue);
+            };
+            group.position.set(gv("position.x", 0), gv("position.y", 0), gv("position.z", 0));
+            group.rotation.set((gv("rotation.x", 0) / 180) * Math.PI, (gv("rotation.y", 0) / 180) * Math.PI, (gv("rotation.z", 0) / 180) * Math.PI);
+            group.scale.set(gv("scale.x", 1), gv("scale.y", 1), gv("scale.z", 1));
+            for (let i = 0; i < 4; i++) {
+                const track = new THREE.Group();
+                const tN = ["left", "down", "up", "right"][i];
+                track.position.set((i - 1.5) * 1.75 + gv(`tracks.${tN}.position.x`, 0), gv(`tracks.${tN}.position.y`, 0), gv(`tracks.${tN}.position.z`, 0));
+                track.rotation.set((gv(`tracks.${tN}.rotation.x`, 0) / 180) * Math.PI, (gv(`tracks.${tN}.rotation.y`, 0) / 180) * Math.PI, (gv(`tracks.${tN}.rotation.z`, 0) / 180) * Math.PI);
+                track.scale.set(gv(`tracks.${tN}.scale.x`, 1), gv(`tracks.${tN}.scale.y`, 1), gv(`tracks.${tN}.scale.z`, 1));
+                const receptor = Model.getArrow(keys[i] ? 0x7f7f7f : 0x000000);
+                receptor.position.set(0, 2.5, 0);
+                const r = [90, 180, 0, -90][i];
+                receptor.rotation.set(0, 0, (r / 180) * Math.PI);
+                track.add(receptor);
+                map.notes.forEach((note) => {
+                    if (note.track - 1 === i) {
+                        if ((note.stopTime || note.time) / 1000 - songTime > 0 && note.time / 1000 - songTime < maxViewDistance / scrollSpeed) {
+                            if (note.time / 1000 - songTime > 0) {
+                                const arrow = Model.getArrow(getColor(note.time));
+                                let arrowX = 0;
+                                let arrowY = 2.5 - (note.time / 1000 - songTime) * scrollSpeed;
+                                let arrowZ = 0;
+                                const nP = gv(
+                                    `tracks.${tN}.notes.position`,
+                                    gv(`notes.position`, (a) => {
+                                        return { x: 0, y: 0, z: 0 };
+                                    }),
+                                )((note.time / 1000 - songTime) * scrollSpeed);
+                                arrowX = arrowX + nP.x || 0;
+                                arrowY = arrowY + nP.y || 0;
+                                arrowZ = arrowZ + nP.z || 0;
+                                arrow.position.set(arrowX, arrowY, arrowZ);
+                                arrow.rotation.set(
+                                    (gv(`tracks.${tN}.notes.rotation.x`, gv(`notes.rotation.x`, 0)) / 180) * Math.PI,
+                                    (gv(`tracks.${tN}.notes.rotation.y`, gv(`notes.rotation.y`, 0)) / 180) * Math.PI,
+                                    ((r + gv(`tracks.${tN}.notes.rotation.z`, gv(`notes.rotation.z`, 0))) / 180) * Math.PI,
+                                );
+                                arrow.scale.set(1.5 * gv(`tracks.${tN}.notes.scale.x`, gv(`notes.scale.x`, 1)), 1.5 * gv(`tracks.${tN}.notes.scale.y`, gv(`notes.scale.y`, 1)), 1.5 * gv(`tracks.${tN}.notes.scale.z`, gv(`notes.scale.z`, 1)));
+                                track.add(arrow);
+                            }
+                            if (note.stopTime) {
+                                const arrowBody = Model.getHold(
+                                    { x: 0, y: 2.5, z: -0.0002 },
+                                    { x: 0, y: -1, z: 0 },
+                                    inn((note.time / 1000 - songTime) * scrollSpeed),
+                                    inn((note.stopTime / 1000 - songTime) * scrollSpeed),
+                                    gv(
+                                        `tracks.${tN}.notes.position`,
+                                        gv(`notes.position`, (a) => {}),
+                                    ),
+                                );
+                                if (arrowBody) {
+                                    track.add(arrowBody);
+                                    const holdend = Model.getHoldEnd();
+                                    let holdendX = 0;
+                                    let holdendY = 2.5 - inn((note.stopTime / 1000 - songTime) * scrollSpeed);
+                                    let holdendZ = -0.0001;
+                                    const nP = gv(
+                                        `tracks.${tN}.notes.position`,
+                                        gv(`notes.position`, (a) => {
+                                            return { x: 0, y: 0, z: 0 };
+                                        }),
+                                    )((note.stopTime / 1000 - songTime) * scrollSpeed);
+                                    holdendX = holdendX + nP.x || 0;
+                                    holdendY = holdendY + nP.y || 0;
+                                    holdendZ = holdendZ + nP.z || 0;
+                                    holdend.position.set(holdendX, holdendY, holdendZ);
+                                    track.add(holdend);
+                                }
                             }
                         }
                     }
-                }
-            });
-            defaultgroup.add(track);
+                });
+                group.add(track);
+            }
+            scene.add(group);
+            groups.push(group);
         }
-        scene.add(defaultgroup);
-        groups.push(defaultgroup);
     }
 
     // 更新判定

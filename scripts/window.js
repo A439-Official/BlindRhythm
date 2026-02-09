@@ -23,7 +23,7 @@ class WindowManager {
             },
             autoHideMenuBar: true,
         });
-        this.mainWindow.setFullScreen(configManager.get("fullScreen", false));
+        this.mainWindow.setFullScreen(configManager.get("fullscreen", false));
         this._initShortcuts(configManager);
         return this.mainWindow;
     }
@@ -51,7 +51,7 @@ class WindowManager {
                 label: "Full screen",
                 click: () => {
                     this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen());
-                    configManager.set("fullScreen", this.mainWindow.isFullScreen());
+                    configManager.set("fullscreen", this.mainWindow.isFullScreen());
                 },
                 accelerator: "F11",
             },

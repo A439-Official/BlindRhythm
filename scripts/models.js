@@ -136,7 +136,7 @@ class Model {
      */
     static getHold(pos, ext, l1, l2, twistFunc) {
         const width = 1.5;
-        const segments = 100;
+        const segments = 43;
         if (ext.x === 0 && ext.y === 0 && ext.z === 0) {
             return null;
         }
@@ -164,6 +164,9 @@ class Model {
             let twist;
             try {
                 twist = twistFunc(currentDistance);
+                twist.x = twist.x || 0;
+                twist.y = twist.y || 0;
+                twist.z = twist.z || 0;
             } catch (error) {
                 twist = { x: 0, y: 0, z: 0 };
             }

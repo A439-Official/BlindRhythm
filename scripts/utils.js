@@ -12,6 +12,13 @@ class Utils {
         return (Date.now() - this.pageStartTime) / 1000;
     }
 
+    static run(code, context = {}) {
+        const keys = Object.keys(context);
+        const values = keys.map((key) => context[key]);
+        const fn = new Function(...keys, code);
+        return fn(...values);
+    }
+
     static to(pageId, data) {
         // 如果已经有淡出动画正在进行，则直接返回
         if (Utils._fadeOutInProgress) {
